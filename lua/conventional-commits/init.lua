@@ -686,9 +686,9 @@ local function show_preview_and_commit()
     table.insert(lines, '')
 
     if state.body and state.body ~= '' then
-      table.insert(lines, ' <CR> commit  •  e edit  •  b edit body  •  <Esc> cancel')
+      table.insert(lines, ' <CR> commit  •  e edit  •  b edit body  •  A git add .  •  <Esc> cancel')
     else
-      table.insert(lines, ' <CR> commit  •  e edit  •  b add body  •  <Esc> cancel')
+      table.insert(lines, ' <CR> commit  •  e edit  •  b add body  •  A git add .  •  <Esc> cancel')
     end
 
     table.insert(lines, '')
@@ -738,6 +738,15 @@ local function show_preview_and_commit()
       vim.api.nvim_win_close(win, true)
       vim.notify('Commit cancelled', vim.log.levels.WARN)
       state = {}
+    end, opts)
+
+    vim.keymap.set('n', 'A', function()
+      vim.fn.system({ 'git', 'add', '.' })
+      if vim.v.shell_error == 0 then
+        vim.notify('✓ Staged all changes (git add .)', vim.log.levels.INFO)
+      else
+        vim.notify('✗ Failed to stage changes', vim.log.levels.ERROR)
+      end
     end, opts)
   else
     vim.fn.system({ 'git', 'commit', '-m', commit_msg })
