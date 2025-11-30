@@ -242,7 +242,7 @@ local function render_results(buf, items, selected_idx, is_emoji_list)
         local separator = ' · '
         -- Calculate available space for description (70 is window width)
         local prefix_len = vim.fn.strdisplaywidth(' ' .. prefix .. ' ' .. icon .. '  ' .. name .. separator)
-        local max_desc_len = 70 - prefix_len - 2  -- -2 for border
+        local max_desc_len = 70 - prefix_len - 2 -- -2 for border
         local description = truncate_text(item.description, max_desc_len)
         local line1 = string.format(' %s %s  %s%s%s', prefix, icon, name, separator, description)
 
@@ -828,9 +828,9 @@ local function show_preview_and_commit()
 
     -- Highlight command keys (single letters at start or after bullets)
     -- Match letter at the beginning: " e edit"
-    local start_pos = line1_text:match('^%s+()')
-    if start_pos then
-      vim.api.nvim_buf_add_highlight(buf, ns_id, 'Special', help_line_1, start_pos - 1, start_pos)
+    local first_key_pos = line1_text:match('^%s+()')
+    if first_key_pos then
+      vim.api.nvim_buf_add_highlight(buf, ns_id, 'Special', help_line_1, first_key_pos - 1, first_key_pos)
     end
     -- Match letters after bullets: "•  b" and "•  A"
     for pos in line1_text:gmatch('•%s+()') do
