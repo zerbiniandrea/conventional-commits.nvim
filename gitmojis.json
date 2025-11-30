@@ -81,6 +81,46 @@
       "semver": null
     },
     {
+      "emoji": "✅",
+      "entity": "&#x2705;",
+      "code": ":white_check_mark:",
+      "description": "Add, update, or pass tests.",
+      "name": "white-check-mark",
+      "semver": null
+    },
+    {
+      "emoji": "🔒️",
+      "entity": "&#x1f512;",
+      "code": ":lock:",
+      "description": "Fix security or privacy issues.",
+      "name": "lock",
+      "semver": "patch"
+    },
+    {
+      "emoji": "🔐",
+      "entity": "&#x1f510;",
+      "code": ":closed_lock_with_key:",
+      "description": "Add or update secrets.",
+      "name": "closed-lock-with-key",
+      "semver": null
+    },
+    {
+      "emoji": "🔖",
+      "entity": "&#x1f516;",
+      "code": ":bookmark:",
+      "description": "Release / Version tags.",
+      "name": "bookmark",
+      "semver": null
+    },
+    {
+      "emoji": "🚨",
+      "entity": "&#x1f6a8;",
+      "code": ":rotating_light:",
+      "description": "Fix compiler / linter warnings.",
+      "name": "rotating-light",
+      "semver": null
+    },
+    {
       "emoji": "🚧",
       "entity": "&#x1f6a7;",
       "code": ":construction:",
