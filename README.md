@@ -2,8 +2,6 @@
 
 A Neovim plugin for creating conventional commits with a clean, searchable UI.
 
-## Demo
-
 ![Demo](assets/demo.gif)
 
 ## Features
