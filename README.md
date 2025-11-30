@@ -6,6 +6,12 @@
     alt="Gitmoji"
   />
 </a>
+<a href="https://conventionalcommits.org">
+  <img
+    src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white"
+    alt="Conventional Commits"
+  />
+</a>
 
 A Neovim plugin for creating conventional commits with a clean, searchable UI.
 
