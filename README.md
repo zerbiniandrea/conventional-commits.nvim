@@ -4,6 +4,8 @@ A Neovim plugin for creating conventional commits with a clean, searchable UI.
 
 ![Demo](assets/demo.gif)
 
+*<sub>recorded with [asciinema](https://github.com/asciinema/asciinema), some emojis are looking weird - [here's a version](assets/demo_recorded.gif) with all emojis but lower quality</sub>*
+
 ## Features
 
 - 🔍 Searchable commit types and emojis
