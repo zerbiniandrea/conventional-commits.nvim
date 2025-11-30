@@ -1,5 +1,38 @@
 local M = {}
 
+-- Load gitmojis from JSON file
+local function load_gitmojis()
+  local plugin_root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':h:h:h')
+  local gitmoji_path = plugin_root .. '/gitmojis.json'
+
+  local file = io.open(gitmoji_path, 'r')
+  if not file then
+    vim.notify('Failed to load gitmojis.json', vim.log.levels.ERROR)
+    return {}
+  end
+
+  local content = file:read('*all')
+  file:close()
+
+  local ok, data = pcall(vim.json.decode, content)
+  if not ok then
+    vim.notify('Failed to parse gitmojis.json', vim.log.levels.ERROR)
+    return {}
+  end
+
+  -- Transform API format to our format
+  local emojis = {}
+  for _, gitmoji in ipairs(data.gitmojis or {}) do
+    table.insert(emojis, {
+      key = gitmoji.emoji,
+      name = gitmoji.name,
+      description = gitmoji.description,
+    })
+  end
+
+  return emojis
+end
+
 -- Default configuration
 M.config = {
   commit_types = {
@@ -15,25 +48,7 @@ M.config = {
     { key = 'chore', description = 'Other changes' },
     { key = 'revert', description = 'Revert a previous commit' },
   },
-  emojis = {
-    { key = '✨', name = 'sparkles', description = 'new feature' },
-    { key = '🐛', name = 'bug', description = 'bug fix' },
-    { key = '📝', name = 'memo', description = 'documentation' },
-    { key = '🎨', name = 'art', description = 'code style/structure' },
-    { key = '♻️', name = 'recycle', description = 'refactoring' },
-    { key = '⚡️', name = 'zap', description = 'performance' },
-    { key = '✅', name = 'check', description = 'tests' },
-    { key = '🔧', name = 'wrench', description = 'configuration' },
-    { key = '🚀', name = 'rocket', description = 'deployment' },
-    { key = '🔥', name = 'fire', description = 'remove code/files' },
-    { key = '💚', name = 'green-heart', description = 'CI' },
-    { key = '⬆️', name = 'arrow-up', description = 'upgrade deps' },
-    { key = '⬇️', name = 'arrow-down', description = 'downgrade deps' },
-    { key = '📌', name = 'pushpin', description = 'pin dependencies' },
-    { key = '🎉', name = 'tada', description = 'initial commit' },
-    { key = '🔒', name = 'lock', description = 'security' },
-    { key = '🚧', name = 'construction', description = 'WIP' },
-  },
+  emojis = load_gitmojis(),
   show_emoji_step = true,
   show_preview = true,
   border = 'rounded',

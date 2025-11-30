@@ -1,5 +1,12 @@
 # Conventional Commits Plugin for Neovim
 
+<a href="https://gitmoji.dev">
+  <img
+    src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square"
+    alt="Gitmoji"
+  />
+</a>
+
 A Neovim plugin for creating conventional commits with a clean, searchable UI.
 
 ![Demo](assets/demo.gif)
@@ -69,13 +76,9 @@ require('conventional-commits').setup({
     -- Add your own types...
   },
 
-  -- Customize emojis
-  emojis = {
-    { key = '✨', name = 'sparkles', description = 'new feature' },
-    { key = '🐛', name = 'bug', description = 'bug fix' },
-    { key = '📚', name = 'books', description = 'documentation' },
-    -- Add your own emojis...
-  },
+  -- Emojis are loaded from gitmojis.json
+  -- Override if you want custom emojis:
+  -- emojis = { { key = '✨', name = 'sparkles', description = 'new feature' } },
 })
 ```
 
@@ -88,5 +91,10 @@ require('conventional-commits').setup({
 **Input prompts:**
 - Starts in insert mode, all vim commands work in normal mode
 - `<CR>` to confirm, `<Esc>` or `q` to cancel
+
+**Preview window:**
+- `<CR>` to commit, `e` to edit, `b` to add/edit body
+- `A` to stage all changes (`git add .`)
+- `<Esc>` to cancel
 
 
