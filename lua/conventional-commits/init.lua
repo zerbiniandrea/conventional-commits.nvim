@@ -213,6 +213,13 @@ local function render_prompt(buf, search_query, prompt_prefix, placeholder)
   return cursor_col
 end
 
+local function truncate_text(text, max_length)
+  if #text <= max_length then
+    return text
+  end
+  return text:sub(1, max_length - 1) .. '…'
+end
+
 local function render_results(buf, items, selected_idx, is_emoji_list)
   vim.bo[buf].modifiable = true
 
@@ -233,7 +240,11 @@ local function render_results(buf, items, selected_idx, is_emoji_list)
         local icon = item.icon or item.key
         local name = item.name and (':' .. item.name .. ':') or ''
         local separator = ' · '
-        local line1 = string.format(' %s %s  %s%s%s', prefix, icon, name, separator, item.description)
+        -- Calculate available space for description (70 is window width)
+        local prefix_len = vim.fn.strdisplaywidth(' ' .. prefix .. ' ' .. icon .. '  ' .. name .. separator)
+        local max_desc_len = 70 - prefix_len - 2  -- -2 for border
+        local description = truncate_text(item.description, max_desc_len)
+        local line1 = string.format(' %s %s  %s%s%s', prefix, icon, name, separator, description)
 
         -- Store line numbers for highlighting (0-indexed)
         if idx == selected_idx then
@@ -300,16 +311,101 @@ local function select_from_menu(items, title, title_icon, is_emoji_list, placeho
   local selected_idx = 1
   local search_query = ''
   local filtered_items = vim.deepcopy(items)
+  local tooltip_win = nil
+  local tooltip_buf = nil
+
+  local function update_tooltip()
+    -- Close existing tooltip
+    if tooltip_win and vim.api.nvim_win_is_valid(tooltip_win) then
+      vim.api.nvim_win_close(tooltip_win, true)
+      tooltip_win = nil
+    end
+
+    if not is_emoji_list or #filtered_items == 0 then
+      return
+    end
+
+    local selected_item = filtered_items[selected_idx]
+    if not selected_item then
+      return
+    end
+
+    -- Calculate if description would be truncated
+    local icon = selected_item.icon or selected_item.key
+    local name = selected_item.name and (':' .. selected_item.name .. ':') or ''
+    local separator = ' · '
+    local prefix_len = vim.fn.strdisplaywidth(' ▶ ' .. icon .. '  ' .. name .. separator)
+    local max_desc_len = 70 - prefix_len - 2
+
+    -- Only show tooltip if description is truncated
+    if #selected_item.description <= max_desc_len then
+      return
+    end
+
+    -- Create tooltip buffer
+    tooltip_buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[tooltip_buf].bufhidden = 'wipe'
+
+    -- Set tooltip content
+    vim.api.nvim_buf_set_lines(tooltip_buf, 0, -1, false, { selected_item.description })
+
+    -- Calculate tooltip position (to the right of results window)
+    local results_config = vim.api.nvim_win_get_config(layout.results_win)
+    local tooltip_col = results_config.col + results_config.width + 2
+    local tooltip_width = math.min(50, vim.o.columns - tooltip_col - 2)
+
+    -- Calculate wrapped line count for proper height
+    local wrapped_lines = 0
+    for char in selected_item.description:gmatch('.') do
+      wrapped_lines = wrapped_lines + (char == '\n' and 1 or 0)
+    end
+    -- Estimate wrapped lines based on width (rough approximation)
+    local estimated_lines = math.ceil(#selected_item.description / tooltip_width) + wrapped_lines
+    local max_tooltip_height = math.floor(vim.o.lines * 0.6)
+    local tooltip_height = math.min(estimated_lines, max_tooltip_height)
+
+    -- Create tooltip window
+    tooltip_win = vim.api.nvim_open_win(tooltip_buf, false, {
+      relative = 'editor',
+      width = tooltip_width,
+      height = tooltip_height,
+      row = results_config.row,
+      col = tooltip_col,
+      style = 'minimal',
+      border = M.config.border,
+      title = ' Description ',
+      title_pos = 'left',
+    })
+
+    vim.wo[tooltip_win].winhl = 'Normal:Normal,FloatBorder:ConventionalCommitBorder'
+    vim.wo[tooltip_win].wrap = true
+    vim.wo[tooltip_win].linebreak = true
+  end
 
   local function update_ui()
     local cursor_col = render_prompt(layout.prompt_buf, search_query, '> ', placeholder)
     render_results(layout.results_buf, filtered_items, selected_idx, is_emoji_list)
     vim.api.nvim_win_set_cursor(layout.prompt_win, { 1, cursor_col })
+
+    -- Scroll the results window to show the selected item
+    if #filtered_items > 0 then
+      local line_in_results = selected_idx
+      if not is_emoji_list then
+        -- For two-line items (commit types), each item takes 2 lines
+        line_in_results = (selected_idx - 1) * 2 + 1
+      end
+      vim.api.nvim_win_set_cursor(layout.results_win, { line_in_results, 0 })
+    end
+
+    update_tooltip()
   end
 
   update_ui()
 
   local function close_and_callback(item)
+    if tooltip_win and vim.api.nvim_win_is_valid(tooltip_win) then
+      vim.api.nvim_win_close(tooltip_win, true)
+    end
     vim.api.nvim_win_close(layout.prompt_win, true)
     vim.api.nvim_win_close(layout.results_win, true)
     if callback then
