@@ -158,7 +158,11 @@ local function filter_items(items, query)
   local lower_query = query:lower()
 
   for _, item in ipairs(items) do
-    local search_text = (item.key .. ' ' .. item.description):lower()
+    local search_text = item.key .. ' ' .. item.description
+    if item.name then
+      search_text = search_text .. ' ' .. item.name
+    end
+    search_text = search_text:lower()
     if search_text:find(lower_query, 1, true) then
       table.insert(filtered, item)
     end
