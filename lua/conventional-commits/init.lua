@@ -686,10 +686,11 @@ local function show_preview_and_commit()
     table.insert(lines, '')
 
     if state.body and state.body ~= '' then
-      table.insert(lines, ' <CR> commit  •  e edit  •  b edit body  •  A git add .  •  <Esc> cancel')
+      table.insert(lines, ' e edit  •  b edit body  •  A stage all')
     else
-      table.insert(lines, ' <CR> commit  •  e edit  •  b add body  •  A git add .  •  <Esc> cancel')
+      table.insert(lines, ' e edit  •  b add body  •  A stage all')
     end
+    table.insert(lines, ' <CR> commit  •  <Esc> cancel')
 
     table.insert(lines, '')
 
@@ -698,7 +699,33 @@ local function show_preview_and_commit()
 
     local ns_id = vim.api.nvim_create_namespace('conventional_commits_preview')
     vim.api.nvim_buf_add_highlight(buf, ns_id, 'ConventionalCommitDescription', separator_line, 0, -1)
-    vim.api.nvim_buf_add_highlight(buf, ns_id, 'ConventionalCommitDescription', separator_line + 2, 0, -1)
+
+    -- Highlight help text lines - make entire lines dimmed, then highlight keys
+    local help_line_1 = separator_line + 2
+    local help_line_2 = separator_line + 3
+
+    vim.api.nvim_buf_add_highlight(buf, ns_id, 'ConventionalCommitDescription', help_line_1, 0, -1)
+    vim.api.nvim_buf_add_highlight(buf, ns_id, 'ConventionalCommitDescription', help_line_2, 0, -1)
+
+    -- Highlight keys by finding patterns in the lines
+    local line1_text = vim.api.nvim_buf_get_lines(buf, help_line_1, help_line_1 + 1, false)[1]
+    local line2_text = vim.api.nvim_buf_get_lines(buf, help_line_2, help_line_2 + 1, false)[1]
+
+    -- Highlight command keys (single letters at start or after bullets)
+    -- Match letter at the beginning: " e edit"
+    local start_pos = line1_text:match('^%s+()')
+    if start_pos then
+      vim.api.nvim_buf_add_highlight(buf, ns_id, 'Special', help_line_1, start_pos - 1, start_pos)
+    end
+    -- Match letters after bullets: "•  b" and "•  A"
+    for pos in line1_text:gmatch('•%s+()') do
+      vim.api.nvim_buf_add_highlight(buf, ns_id, 'Special', help_line_1, pos - 1, pos)
+    end
+
+    -- Highlight anything in angle brackets like <CR>, <Esc>
+    for start_pos, end_pos in line2_text:gmatch('()<[^>]+>()') do
+      vim.api.nvim_buf_add_highlight(buf, ns_id, 'Special', help_line_2, start_pos - 1, end_pos - 1)
+    end
 
     vim.bo[buf].modifiable = false
 
