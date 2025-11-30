@@ -13,7 +13,7 @@
   />
 </a>
 
-A Neovim plugin for creating conventional commits with a clean, searchable UI.
+Create beautiful, standardized commits using [Conventional Commits](https://conventionalcommits.org) and [Gitmojis](https://gitmoji.dev) directly from Neovim.
 
 ![Demo](assets/demo.gif)
 
@@ -56,14 +56,6 @@ The plugin follows standard Neovim plugin structure and *should* work with any p
 ```
 
 Default keymap: `<leader>gc`
-
-## Workflow
-
-1. Select commit type
-2. Enter scope (optional)
-3. Select emoji (optional)
-4. Enter commit message
-5. Preview - `<CR>` to commit, `e` to edit, `b` to add body, `<Esc>` to cancel
 
 ## Configuration
 
