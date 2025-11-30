@@ -1,0 +1,42 @@
+name: Update Gitmojis
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-gitmojis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download latest gitmojis
+        run: |
+          curl -s https://gitmoji.dev/api/gitmojis | jq '.' > gitmojis-new.json
+
+      - name: Check for changes
+        id: check
+        run: |
+          if ! diff -q gitmojis.json gitmojis-new.json > /dev/null 2>&1; then
+            mv gitmojis-new.json gitmojis.json
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.check.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(emojis): 🍱 update gitmojis from official API"
+          title: "Update gitmojis"
+          body: "Automated update of gitmojis from https://gitmoji.dev/api/gitmojis"
+          branch: update-gitmojis
+          delete-branch: true
