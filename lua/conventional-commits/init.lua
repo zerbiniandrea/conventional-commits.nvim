@@ -234,7 +234,7 @@ local function render_results(buf, items, selected_idx, is_emoji_list)
     table.insert(lines, '')
   else
     for idx, item in ipairs(items) do
-      local prefix = idx == selected_idx and '▶' or ' '
+      local prefix = idx == selected_idx and '›' or ' '
 
       if is_emoji_list then
         local icon = item.icon or item.key
@@ -779,7 +779,7 @@ local function show_preview_and_commit()
   if M.config.show_preview then
     local width = 70
     local buf, win = create_float({
-      title = ' 📋  Commit Preview ',
+      title = ' 🔍  Commit Preview ',
       height = 15,
       width = width,
     })
@@ -961,7 +961,7 @@ step_message = function(edit_mode)
       show_preview_and_commit()
     end)
   else
-    input_prompt_simple(' 💬  Commit Message ', 'Enter a brief description...', function(message)
+    input_prompt_simple(' 📝  Commit Message ', 'Enter a brief description...', function(message)
       if not message or message == '' then
         vim.notify('Commit message is required', vim.log.levels.ERROR)
         state = {}
@@ -1002,7 +1002,7 @@ local function step_type()
   select_from_menu(
     M.config.commit_types,
     'Select Commit Type',
-    '🔖',
+    '🏷️',
     false,
     'Type to filter commit types...',
     function(commit_type)
