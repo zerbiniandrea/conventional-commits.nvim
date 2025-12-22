@@ -302,11 +302,36 @@ local function create_telescope_layout(opts)
   }
 end
 
-local function filter_items(items, query)
+local function filter_items(items, query, fuzzy)
   if not query or query == '' then
     return items
   end
 
+  if fuzzy then
+    -- Build search strings and map to items
+    local search_to_item = {}
+    local search_strings = {}
+    for _, item in ipairs(items) do
+      local search_text = item.key .. ' ' .. item.description
+      if item.name then
+        search_text = search_text .. ' ' .. item.name
+      end
+      table.insert(search_strings, search_text)
+      search_to_item[search_text] = item
+    end
+
+    -- Use Neovim's built-in fuzzy matcher
+    local matches = vim.fn.matchfuzzy(search_strings, query)
+
+    -- Map back to items
+    local filtered = {}
+    for _, match in ipairs(matches) do
+      table.insert(filtered, search_to_item[match])
+    end
+    return filtered
+  end
+
+  -- Plain substring matching
   local filtered = {}
   local lower_query = query:lower()
 
@@ -316,6 +341,7 @@ local function filter_items(items, query)
       search_text = search_text .. ' ' .. item.name
     end
     search_text = search_text:lower()
+
     if search_text:find(lower_query, 1, true) then
       table.insert(filtered, item)
     end
@@ -514,7 +540,7 @@ local function select_from_menu(items, title, title_icon, is_emoji_list, placeho
     on_change = function(text)
       if text ~= search_query then
         search_query = text
-        filtered_items = filter_items(items, search_query)
+        filtered_items = filter_items(items, search_query, is_emoji_list)
         selected_idx = math.min(selected_idx, math.max(1, #filtered_items))
         update_ui()
       end
