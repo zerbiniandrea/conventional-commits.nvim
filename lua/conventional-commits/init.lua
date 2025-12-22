@@ -76,6 +76,145 @@ local function setup_highlights()
   vim.api.nvim_set_hl(0, 'ConventionalCommitModeVisual', { fg = '#282c34', bg = '#c678dd', bold = true })
 end
 
+-- Helper to set up a prompt buffer with insert-mode-only behavior
+local function setup_prompt_buffer(buf, win, opts)
+  opts = opts or {}
+  local placeholder = opts.placeholder
+  local on_submit = opts.on_submit
+  local on_cancel = opts.on_cancel
+  local on_change = opts.on_change
+  local before_close = opts.before_close
+  local extra_windows = opts.extra_windows or {}
+
+  vim.bo[buf].buftype = 'prompt'
+  vim.fn.prompt_setprompt(buf, '> ')
+
+  local ns = vim.api.nvim_create_namespace('cc_prompt_' .. buf)
+  local closed = false
+
+  local function close()
+    if closed then
+      return
+    end
+    closed = true
+    -- Run cleanup callback
+    if before_close then
+      before_close()
+    end
+    -- Mark buffer as not modified to prevent save prompts
+    if vim.api.nvim_buf_is_valid(buf) then
+      vim.bo[buf].modified = false
+    end
+    -- Close extra windows first
+    for _, w in ipairs(extra_windows) do
+      if vim.api.nvim_win_is_valid(w) then
+        vim.api.nvim_win_close(w, true)
+      end
+    end
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
+    end
+  end
+
+  local function render_placeholder(text)
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+    if (not text or text == '') and placeholder then
+      local line = vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or ''
+      if #line >= 2 then
+        vim.api.nvim_buf_set_extmark(buf, ns, 0, 2, {
+          virt_text = { { placeholder, 'ConventionalCommitDescription' } },
+          virt_text_pos = 'overlay',
+        })
+      end
+    end
+  end
+
+  -- Defer initial placeholder render until prompt is set up
+  vim.schedule(function()
+    if not closed then
+      render_placeholder('')
+    end
+  end)
+
+  -- Listen for text changes
+  vim.api.nvim_buf_attach(buf, false, {
+    on_lines = function()
+      if closed then
+        return true
+      end
+      vim.schedule(function()
+        if closed then
+          return
+        end
+        local line = vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or ''
+        local text = line:sub(3) -- Remove '> ' prefix
+        render_placeholder(text)
+        if on_change then
+          on_change(text)
+        end
+      end)
+    end,
+  })
+
+  -- Set up prompt callbacks
+  vim.fn.prompt_setcallback(buf, function(text)
+    if on_submit then
+      on_submit(text, close)
+    else
+      close()
+    end
+  end)
+
+  vim.fn.prompt_setinterrupt(buf, function()
+    if on_cancel then
+      on_cancel(close)
+    else
+      close()
+    end
+  end)
+
+  -- Escape to cancel
+  local keymap_opts = { buffer = buf, nowait = true, silent = true }
+  vim.keymap.set('i', '<Esc>', function()
+    if on_cancel then
+      on_cancel(close)
+    else
+      close()
+    end
+  end, keymap_opts)
+
+  -- Prevent leaving insert mode - re-enter immediately if user exits
+  vim.api.nvim_create_autocmd('InsertLeave', {
+    buffer = buf,
+    callback = function()
+      if not closed and vim.api.nvim_win_is_valid(win) then
+        vim.schedule(function()
+          if not closed and vim.api.nvim_win_is_valid(win) then
+            vim.cmd('startinsert')
+          end
+        end)
+      end
+    end,
+  })
+
+  -- Start insert mode
+  vim.schedule(function()
+    if not closed and vim.api.nvim_win_is_valid(win) then
+      vim.cmd('startinsert')
+    end
+  end)
+
+  return {
+    close = close,
+    is_closed = function()
+      return closed
+    end,
+    set_keymap = function(mode, key, fn)
+      vim.keymap.set(mode, key, fn, keymap_opts)
+    end,
+  }
+end
+
 local function create_float(opts)
   opts = opts or {}
   local width = opts.width or math.floor(vim.o.columns * 0.6)
@@ -136,7 +275,6 @@ local function create_telescope_layout(opts)
 
   local prompt_buf = vim.api.nvim_create_buf(false, true)
   vim.bo[prompt_buf].bufhidden = 'wipe'
-  vim.bo[prompt_buf].filetype = 'ConventionalCommit'
 
   local prompt_win = vim.api.nvim_open_win(prompt_buf, true, {
     relative = 'editor',
@@ -184,33 +322,6 @@ local function filter_items(items, query)
   end
 
   return filtered
-end
-
-local function render_prompt(buf, search_query, prompt_prefix, placeholder)
-  vim.bo[buf].modifiable = true
-
-  local prompt_text = (prompt_prefix or '> ')
-  local query = search_query or ''
-  local cursor_col = #prompt_text + #query
-
-  local display_text
-  if query == '' and placeholder then
-    display_text = prompt_text .. placeholder
-  else
-    display_text = prompt_text .. query
-  end
-
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { display_text })
-
-  if query == '' and placeholder then
-    local ns_id = vim.api.nvim_create_namespace('conventional_commits_prompt')
-    vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
-    vim.api.nvim_buf_add_highlight(buf, ns_id, 'ConventionalCommitDescription', 0, #prompt_text, -1)
-  end
-
-  vim.bo[buf].modifiable = false
-
-  return cursor_col
 end
 
 local function truncate_text(text, max_length)
@@ -312,14 +423,16 @@ local function select_from_menu(items, title, title_icon, is_emoji_list, placeho
   local search_query = ''
   local filtered_items = vim.deepcopy(items)
   local tooltip_win = nil
-  local tooltip_buf = nil
 
-  local function update_tooltip()
-    -- Close existing tooltip
+  local function close_tooltip()
     if tooltip_win and vim.api.nvim_win_is_valid(tooltip_win) then
       vim.api.nvim_win_close(tooltip_win, true)
       tooltip_win = nil
     end
+  end
+
+  local function update_tooltip()
+    close_tooltip()
 
     if not is_emoji_list or #filtered_items == 0 then
       return
@@ -330,41 +443,26 @@ local function select_from_menu(items, title, title_icon, is_emoji_list, placeho
       return
     end
 
-    -- Calculate if description would be truncated
     local icon = selected_item.icon or selected_item.key
     local name = selected_item.name and (':' .. selected_item.name .. ':') or ''
     local separator = ' · '
     local prefix_len = vim.fn.strdisplaywidth(' ▶ ' .. icon .. '  ' .. name .. separator)
     local max_desc_len = 70 - prefix_len - 2
 
-    -- Only show tooltip if description is truncated
     if #selected_item.description <= max_desc_len then
       return
     end
 
-    -- Create tooltip buffer
-    tooltip_buf = vim.api.nvim_create_buf(false, true)
+    local tooltip_buf = vim.api.nvim_create_buf(false, true)
     vim.bo[tooltip_buf].bufhidden = 'wipe'
-
-    -- Set tooltip content
     vim.api.nvim_buf_set_lines(tooltip_buf, 0, -1, false, { selected_item.description })
 
-    -- Calculate tooltip position (to the right of results window)
     local results_config = vim.api.nvim_win_get_config(layout.results_win)
     local tooltip_col = results_config.col + results_config.width + 2
     local tooltip_width = math.min(50, vim.o.columns - tooltip_col - 2)
+    local estimated_lines = math.ceil(#selected_item.description / tooltip_width)
+    local tooltip_height = math.min(estimated_lines, math.floor(vim.o.lines * 0.6))
 
-    -- Calculate wrapped line count for proper height
-    local wrapped_lines = 0
-    for char in selected_item.description:gmatch('.') do
-      wrapped_lines = wrapped_lines + (char == '\n' and 1 or 0)
-    end
-    -- Estimate wrapped lines based on width (rough approximation)
-    local estimated_lines = math.ceil(#selected_item.description / tooltip_width) + wrapped_lines
-    local max_tooltip_height = math.floor(vim.o.lines * 0.6)
-    local tooltip_height = math.min(estimated_lines, max_tooltip_height)
-
-    -- Create tooltip window
     tooltip_win = vim.api.nvim_open_win(tooltip_buf, false, {
       relative = 'editor',
       width = tooltip_width,
@@ -383,15 +481,11 @@ local function select_from_menu(items, title, title_icon, is_emoji_list, placeho
   end
 
   local function update_ui()
-    local cursor_col = render_prompt(layout.prompt_buf, search_query, '> ', placeholder)
     render_results(layout.results_buf, filtered_items, selected_idx, is_emoji_list)
-    vim.api.nvim_win_set_cursor(layout.prompt_win, { 1, cursor_col })
 
-    -- Scroll the results window to show the selected item
     if #filtered_items > 0 then
       local line_in_results = selected_idx
       if not is_emoji_list then
-        -- For two-line items (commit types), each item takes 2 lines
         line_in_results = (selected_idx - 1) * 2 + 1
       end
       vim.api.nvim_win_set_cursor(layout.results_win, { line_in_results, 0 })
@@ -400,96 +494,66 @@ local function select_from_menu(items, title, title_icon, is_emoji_list, placeho
     update_tooltip()
   end
 
-  update_ui()
+  local selected_item = nil
 
-  local function close_and_callback(item)
-    if tooltip_win and vim.api.nvim_win_is_valid(tooltip_win) then
-      vim.api.nvim_win_close(tooltip_win, true)
-    end
-    vim.api.nvim_win_close(layout.prompt_win, true)
-    vim.api.nvim_win_close(layout.results_win, true)
-    if callback then
-      callback(item)
-    end
-  end
+  local prompt = setup_prompt_buffer(layout.prompt_buf, layout.prompt_win, {
+    placeholder = placeholder,
+    extra_windows = { layout.results_win },
+    before_close = close_tooltip,
+    on_submit = function(_, close)
+      if #filtered_items > 0 then
+        selected_item = filtered_items[selected_idx]
+      end
+      close()
+      callback(selected_item)
+    end,
+    on_cancel = function(close)
+      close()
+      callback(nil)
+    end,
+    on_change = function(text)
+      if text ~= search_query then
+        search_query = text
+        filtered_items = filter_items(items, search_query)
+        selected_idx = math.min(selected_idx, math.max(1, #filtered_items))
+        update_ui()
+      end
+    end,
+  })
 
-  local opts = { buffer = layout.prompt_buf, nowait = true, silent = true }
-
-  vim.keymap.set('n', '<Down>', function()
+  -- Navigation keymaps
+  prompt.set_keymap('i', '<Down>', function()
     selected_idx = math.min(selected_idx + 1, #filtered_items)
     update_ui()
-  end, opts)
+  end)
 
-  vim.keymap.set('n', '<Up>', function()
+  prompt.set_keymap('i', '<Up>', function()
     selected_idx = math.max(selected_idx - 1, 1)
     update_ui()
-  end, opts)
+  end)
 
-  vim.keymap.set('n', '<C-n>', function()
+  prompt.set_keymap('i', '<C-n>', function()
     selected_idx = math.min(selected_idx + 1, #filtered_items)
     update_ui()
-  end, opts)
+  end)
 
-  vim.keymap.set('n', '<C-p>', function()
+  prompt.set_keymap('i', '<C-p>', function()
     selected_idx = math.max(selected_idx - 1, 1)
     update_ui()
-  end, opts)
+  end)
 
-  vim.keymap.set('n', '<CR>', function()
-    if #filtered_items > 0 then
-      close_and_callback(filtered_items[selected_idx])
+  -- Initial render
+  vim.schedule(function()
+    if not prompt.is_closed() then
+      update_ui()
     end
-  end, opts)
-
-  vim.keymap.set('n', '<Esc>', function()
-    close_and_callback(nil)
-  end, opts)
-
-  vim.keymap.set('n', 'q', function()
-    close_and_callback(nil)
-  end, opts)
-
-  local function update_search(new_query)
-    search_query = new_query
-    filtered_items = filter_items(items, search_query)
-    selected_idx = math.min(selected_idx, math.max(1, #filtered_items))
-    update_ui()
-  end
-
-  vim.keymap.set('n', '<Space>', function()
-    update_search(search_query .. ' ')
-  end, opts)
-
-  vim.keymap.set('n', '<BS>', function()
-    update_search(search_query:sub(1, -2))
-  end, opts)
-
-  for i = 0, 9 do
-    vim.keymap.set('n', tostring(i), function()
-      update_search(search_query .. tostring(i))
-    end, opts)
-  end
-
-  for i = string.byte('a'), string.byte('z') do
-    local char = string.char(i)
-    vim.keymap.set('n', char, function()
-      update_search(search_query .. char)
-    end, opts)
-
-    vim.keymap.set('n', char:upper(), function()
-      update_search(search_query .. char:upper())
-    end, opts)
-  end
-
-  for _, char in ipairs({ '-', '_', '.', '/', ':', '(', ')' }) do
-    vim.keymap.set('n', char, function()
-      update_search(search_query .. char)
-    end, opts)
-  end
+  end)
 end
 
 local function input_prompt_simple(title, placeholder, callback)
   local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].bufhidden = 'wipe'
+
   local width = 70
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
@@ -505,105 +569,19 @@ local function input_prompt_simple(title, placeholder, callback)
 
   vim.wo[win].winhl = 'Normal:Normal,FloatBorder:ConventionalCommitBorder'
 
-  local text = ''
-  local function render()
-    vim.bo[buf].modifiable = true
-    local display = text == '' and placeholder or text
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '> ' .. display })
-    if text == '' and placeholder then
-      local ns = vim.api.nvim_create_namespace('cc_placeholder')
-      vim.api.nvim_buf_add_highlight(buf, ns, 'ConventionalCommitDescription', 0, 2, -1)
-    end
-    vim.bo[buf].modifiable = false
-    vim.api.nvim_win_set_cursor(win, { 1, 2 + #text })
-  end
+  local is_optional = placeholder and placeholder:find('Optional')
 
-  render()
-
-  local function close(result)
-    vim.api.nvim_win_close(win, true)
-    callback(result)
-  end
-
-  local map = function(key, fn)
-    vim.keymap.set('n', key, fn, { buffer = buf, nowait = true, silent = true })
-  end
-
-  map('<CR>', function()
-    close(text)
-  end)
-  map('<Esc>', function()
-    close(placeholder and placeholder:find('Optional') and '' or nil)
-  end)
-  map('q', function()
-    close(placeholder and placeholder:find('Optional') and '' or nil)
-  end)
-  map('<BS>', function()
-    text = text:sub(1, -2)
-    render()
-  end)
-  map('<Space>', function()
-    text = text .. ' '
-    render()
-  end)
-
-  for i = 0, 9 do
-    map(tostring(i), function()
-      text = text .. i
-      render()
-    end)
-  end
-  for i = string.byte('a'), string.byte('z') do
-    local c = string.char(i)
-    map(c, function()
-      text = text .. c
-      render()
-    end)
-    map(c:upper(), function()
-      text = text .. c:upper()
-      render()
-    end)
-  end
-  local special_chars = {
-    '-',
-    '_',
-    '.',
-    ',',
-    '!',
-    '?',
-    ':',
-    ';',
-    '/',
-    '\\',
-    '(',
-    ')',
-    '[',
-    ']',
-    '{',
-    '}',
-    '@',
-    '#',
-    '$',
-    '%',
-    '^',
-    '&',
-    '*',
-    '+',
-    '=',
-    '|',
-    '<',
-    '>',
-    '~',
-    '`',
-    "'",
-    '"',
-  }
-  for _, c in ipairs(special_chars) do
-    map(c, function()
-      text = text .. c
-      render()
-    end)
-  end
+  setup_prompt_buffer(buf, win, {
+    placeholder = placeholder,
+    on_submit = function(text, close)
+      close()
+      callback(text)
+    end,
+    on_cancel = function(close)
+      close()
+      callback(is_optional and '' or nil)
+    end,
+  })
 end
 
 local function input_prompt(title, placeholder, is_multiline, initial_value, callback)
@@ -714,6 +692,10 @@ local function input_prompt(title, placeholder, is_multiline, initial_value, cal
 
   local function close_and_callback(result)
     vim.api.nvim_del_autocmd(mode_autocmd)
+    -- Mark buffer as not modified to prevent save prompts
+    if vim.api.nvim_buf_is_valid(buf) then
+      vim.bo[buf].modified = false
+    end
     vim.api.nvim_win_close(win, true)
     if callback then
       callback(result)
