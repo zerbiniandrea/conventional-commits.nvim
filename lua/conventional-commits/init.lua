@@ -77,7 +77,7 @@ local function setup_highlights()
 end
 
 -- Helper to set up a prompt buffer with insert-mode-only behavior
-local function setup_prompt_buffer(buf, win, opts)
+local function setup_input_buffer(buf, win, opts)
   opts = opts or {}
   local placeholder = opts.placeholder
   local on_submit = opts.on_submit
@@ -248,7 +248,7 @@ local function create_float(opts)
   return buf, win
 end
 
-local function create_telescope_layout(opts)
+local function create_picker_layout(opts)
   opts = opts or {}
   local width = opts.width or math.floor(vim.o.columns * 0.6)
   local results_height = opts.results_height or math.floor(vim.o.lines * 0.5)
@@ -293,6 +293,7 @@ local function create_telescope_layout(opts)
 
   vim.wo[prompt_win].winhl = 'Normal:Normal,FloatBorder:ConventionalCommitBorder'
   vim.wo[prompt_win].cursorline = false
+  vim.wo[prompt_win].wrap = false
 
   return {
     prompt_buf = prompt_buf,
@@ -434,11 +435,11 @@ local function render_results(buf, items, selected_idx, is_emoji_list)
   vim.bo[buf].modifiable = false
 end
 
-local function select_from_menu(items, title, title_icon, is_emoji_list, placeholder, callback)
+local function show_picker(items, title, title_icon, is_emoji_list, placeholder, callback)
   local item_height = is_emoji_list and 1 or 2
   local results_height = math.min(#items * item_height + 2, 30)
 
-  local layout = create_telescope_layout({
+  local layout = create_picker_layout({
     title = ' ' .. (title or 'Select') .. ' ',
     prompt_title = ' ' .. (title_icon or '🔍') .. '  ' .. (title or 'Search') .. ' ',
     width = 70,
@@ -522,7 +523,7 @@ local function select_from_menu(items, title, title_icon, is_emoji_list, placeho
 
   local selected_item = nil
 
-  local prompt = setup_prompt_buffer(layout.prompt_buf, layout.prompt_win, {
+  local prompt = setup_input_buffer(layout.prompt_buf, layout.prompt_win, {
     placeholder = placeholder,
     extra_windows = { layout.results_win },
     before_close = close_tooltip,
@@ -576,7 +577,7 @@ local function select_from_menu(items, title, title_icon, is_emoji_list, placeho
   end)
 end
 
-local function input_prompt_simple(title, placeholder, callback)
+local function create_text_input(title, placeholder, callback)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].bufhidden = 'wipe'
 
@@ -594,10 +595,11 @@ local function input_prompt_simple(title, placeholder, callback)
   })
 
   vim.wo[win].winhl = 'Normal:Normal,FloatBorder:ConventionalCommitBorder'
+  vim.wo[win].wrap = false
 
   local is_optional = placeholder and placeholder:find('Optional')
 
-  setup_prompt_buffer(buf, win, {
+  setup_input_buffer(buf, win, {
     placeholder = placeholder,
     on_submit = function(text, close)
       close()
@@ -610,7 +612,7 @@ local function input_prompt_simple(title, placeholder, callback)
   })
 end
 
-local function input_prompt(title, placeholder, is_multiline, initial_value, callback)
+local function create_multiline_input(title, placeholder, is_multiline, initial_value, callback)
   -- Handle optional initial_value parameter
   if type(initial_value) == 'function' then
     callback = initial_value
@@ -890,10 +892,16 @@ local function show_preview_and_commit()
 end
 
 step_body = function()
-  input_prompt(' 📄  Commit Body ', 'Optional: Add detailed explanation...', true, state.body or '', function(body)
-    state.body = body
-    show_preview_and_commit()
-  end)
+  create_multiline_input(
+    ' 📄  Commit Body ',
+    'Optional: Add detailed explanation...',
+    true,
+    state.body or '',
+    function(body)
+      state.body = body
+      show_preview_and_commit()
+    end
+  )
 end
 
 step_message = function(edit_mode)
@@ -908,7 +916,7 @@ step_message = function(edit_mode)
     end
     full_msg = full_msg .. (state.message or '')
 
-    input_prompt(' ✏️  Edit Commit Message ', nil, false, full_msg, function(edited)
+    create_multiline_input(' ✏️  Edit Commit Message ', nil, false, full_msg, function(edited)
       if not edited or edited == '' then
         vim.notify('Commit message is required', vim.log.levels.ERROR)
         state = {}
@@ -947,7 +955,7 @@ step_message = function(edit_mode)
       show_preview_and_commit()
     end)
   else
-    input_prompt_simple(' 📝  Commit Message ', 'Enter a brief description...', function(message)
+    create_text_input(' 📝  Commit Message ', 'Enter a brief description...', function(message)
       if not message or message == '' then
         vim.notify('Commit message is required', vim.log.levels.ERROR)
         state = {}
@@ -962,7 +970,7 @@ end
 
 local function step_emoji()
   if M.config.show_emoji_step then
-    select_from_menu(M.config.emojis, 'Select Emoji', '🎨', true, 'Type to filter emojis...', function(emoji)
+    show_picker(M.config.emojis, 'Select Emoji', '🎨', true, 'Type to filter emojis...', function(emoji)
       if not emoji then
         vim.notify('Cancelled', vim.log.levels.WARN)
         state = {}
@@ -978,14 +986,14 @@ local function step_emoji()
 end
 
 local function step_scope()
-  input_prompt_simple(' 🎯  Scope ', 'Optional: e.g., api, ui, auth...', function(scope)
+  create_text_input(' 🎯  Scope ', 'Optional: e.g., api, ui, auth...', function(scope)
     state.scope = scope
     step_emoji()
   end)
 end
 
 local function step_type()
-  select_from_menu(
+  show_picker(
     M.config.commit_types,
     'Select Commit Type',
     '🏷️',
