@@ -17,7 +17,7 @@ Create beautiful, standardized commits using [Conventional Commits](https://conv
 
 ![Demo](assets/demo.gif)
 
-*<sub>recorded with [asciinema](https://github.com/asciinema/asciinema), some emojis are looking weird - [here's a version](assets/demo_recorded.gif) with all emojis but lower quality</sub>*
+*<sub>recorded with [asciinema](https://github.com/asciinema/asciinema), some emojis are looking weird :(*
 
 ## Features
 
