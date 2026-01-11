@@ -21,7 +21,7 @@ Create beautiful, standardized commits using [Conventional Commits](https://conv
 
 ## Features
 
-- 🔍 Searchable commit types and emojis
+- 🔍 Fuzzy search for commit types and emojis
 - 👀 Preview before committing
 - 📝 Full vim-style editing
 - 🎯 No dependencies
@@ -82,17 +82,5 @@ require('conventional-commits').setup({
 
 ## Keybindings
 
-**Selection menus:**
-- Type to filter, `↓`/`↑` or `Ctrl-n`/`Ctrl-p` to navigate
-- `<CR>` to select, `<Esc>` or `q` to cancel
-
-**Input prompts:**
-- Starts in insert mode, all vim commands work in normal mode
-- `<CR>` to confirm, `<Esc>` or `q` to cancel
-
-**Preview window:**
-- `<CR>` to commit, `e` to edit, `b` to add/edit body
-- `A` to stage all changes (`git add .`)
-- `<Esc>` to cancel
-
-
+- Type to filter (fuzzy search), `↓`/`↑` or `Ctrl-n`/`Ctrl-p` to navigate
+- `<CR>` to select, `<Esc>` to cancel
