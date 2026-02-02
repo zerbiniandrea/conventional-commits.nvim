@@ -873,7 +873,7 @@ local function show_preview_and_commit()
     vim.keymap.set('n', 'A', function()
       vim.fn.system({ 'git', 'add', '.' })
       if vim.v.shell_error == 0 then
-        vim.notify('✓ Staged all changes (git add .)', vim.log.levels.INFO)
+        vim.notify('✓ Staged all changes', vim.log.levels.INFO)
       else
         vim.notify('✗ Failed to stage changes', vim.log.levels.ERROR)
       end
