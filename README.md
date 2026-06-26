@@ -12,6 +12,12 @@
     alt="Conventional Commits"
   />
 </a>
+<a href="https://ko-fi.com/zerbyy">
+  <img
+    src="https://img.shields.io/badge/ko--fi-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square"
+    alt="Ko-fi"
+  />
+</a>
 
 Create beautiful, standardized commits using [Conventional Commits](https://conventionalcommits.org) and [Gitmojis](https://gitmoji.dev) directly from Neovim.
 
