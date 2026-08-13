@@ -1,23 +1,8 @@
 # Conventional Commits Plugin for Neovim
 
-<a href="https://gitmoji.dev">
-  <img
-    src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square"
-    alt="Gitmoji"
-  />
-</a>
-<a href="https://conventionalcommits.org">
-  <img
-    src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white"
-    alt="Conventional Commits"
-  />
-</a>
-<a href="https://ko-fi.com/zerbyy">
-  <img
-    src="https://img.shields.io/badge/ko--fi-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square"
-    alt="Ko-fi"
-  />
-</a>
+<a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square" alt="Gitmoji" /></a>
+<a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits" /></a>
+<a href="https://ko-fi.com/zerbyy"><img src="https://img.shields.io/badge/ko--fi-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square" alt="Ko-fi" /></a>
 
 Create beautiful, standardized commits using [Conventional Commits](https://conventionalcommits.org) and [Gitmojis](https://gitmoji.dev) directly from Neovim.
 
