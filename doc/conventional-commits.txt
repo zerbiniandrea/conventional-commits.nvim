@@ -1,0 +1,154 @@
+*conventional-commits.txt*  Conventional Commits with gitmoji for Neovim
+
+Author:  zerby
+License: MIT
+URL:     https://github.com/zerbiniandrea/conventional-commits.nvim
+
+==============================================================================
+CONTENTS                                       *conventional-commits-contents*
+
+  1. Introduction ............................ |conventional-commits-intro|
+  2. Requirements ..................... |conventional-commits-requirements|
+  3. Usage ................................... |conventional-commits-usage|
+  4. Configuration .......................... |conventional-commits-config|
+  5. Keybindings .......................... |conventional-commits-keybindings|
+  6. Lua API ................................... |conventional-commits-api|
+
+==============================================================================
+1. INTRODUCTION                                   *conventional-commits-intro*
+
+conventional-commits.nvim lets you write Conventional Commits
+(https://conventionalcommits.org) with gitmoji (https://gitmoji.dev) without
+leaving Neovim. It walks you through a series of floating prompts, shows a
+preview of the git commit message, then runs `git commit`.
+
+The resulting message looks like: >
+
+    type(scope): 🎨 description
+
+    optional body
+<
+==============================================================================
+2. REQUIREMENTS                            *conventional-commits-requirements*
+
+- Neovim >= 0.9
+- git
+
+==============================================================================
+3. USAGE                                          *conventional-commits-usage*
+
+                                                         *:ConventionalCommit*
+:ConventionalCommit
+    Start the commit flow in the current git repository. The steps are:
+
+    1. Type      pick a commit type (fuzzy search)
+    2. Scope     optional, leave empty to skip
+    3. Emoji     pick a gitmoji (fuzzy search), see `show_emoji_step`
+    4. Message   short description, required
+    5. Preview   review, edit or add a body, then commit, see `show_preview`
+
+    Changes must be staged beforehand, or staged from the preview with `A`.
+
+No keymap is set by default. Example: >lua
+
+    vim.keymap.set('n', '<leader>gc', '<cmd>ConventionalCommit<cr>',
+      { desc = 'Conventional Commit' })
+<
+==============================================================================
+4. CONFIGURATION                                 *conventional-commits-config*
+
+Calling `setup()` is optional. Defaults: >lua
+
+    require('conventional-commits').setup({
+      show_emoji_step = true,
+      show_preview = true,
+      border = 'rounded',
+      commit_types = {
+        { key = 'feat',     description = 'A new feature' },
+        { key = 'fix',      description = 'A bug fix' },
+        { key = 'docs',     description = 'Documentation only changes' },
+        { key = 'style', description = 'Code style changes (formatting, etc)' },
+        { key = 'refactor', description = 'Code refactoring' },
+        { key = 'perf',     description = 'Performance improvements' },
+        { key = 'test',     description = 'Adding or updating tests' },
+        { key = 'build',    description = 'Build system or dependencies' },
+        { key = 'ci',       description = 'CI configuration changes' },
+        { key = 'chore',    description = 'Other changes' },
+        { key = 'revert',   description = 'Revert a previous commit' },
+      },
+      -- emojis: loaded from the bundled gitmojis.json
+    })
+<
+                                       *conventional-commits-show_emoji_step*
+show_emoji_step ~
+    boolean, default `true`
+    Show the gitmoji picker. When `false`, no emoji is added to the message.
+
+                                          *conventional-commits-show_preview*
+show_preview ~
+    boolean, default `true`
+    Show the preview window before committing. When `false`, the commit is
+    created right after the message step.
+
+                                                *conventional-commits-border*
+border ~
+    string, default `'rounded'`
+    Border style of the floating windows. See the `border` key of
+    |nvim_open_win()|.
+
+                                          *conventional-commits-commit_types*
+commit_types ~
+    list of `{ key = string, description = string }`
+    Commit types shown in the first picker.
+
+                                                *conventional-commits-emojis*
+emojis ~
+    list of `{ key = string, name = string, description = string }`
+    Emojis shown in the emoji picker, where `key` is the emoji itself.
+    Defaults to the gitmoji list bundled with the plugin. >lua
+
+    emojis = {
+      { key = '✨', name = 'sparkles', description = 'Introduce new features' },
+    }
+<
+==============================================================================
+5. KEYBINDINGS                              *conventional-commits-keybindings*
+
+Pickers (type and emoji) ~
+    typing              filter the list (fuzzy)
+    <Down> / <C-n>      next item
+    <Up> / <C-p>        previous item
+    <CR>                select
+    <Esc>               cancel
+
+Text inputs (scope and message) ~
+    <CR>                confirm
+    <Esc>               cancel
+
+Body and edit inputs ~
+    These are regular buffers with full vim editing.
+    <CR> (normal mode)  confirm
+    <Esc> / q (normal)  cancel
+    <C-c> (insert)      cancel
+
+Preview ~
+    <CR>                commit
+    e                   edit the full commit message
+    b                   add or edit the body
+    A                   stage all changes (`git add .`)
+    <Esc> / q           cancel
+
+==============================================================================
+6. LUA API                                          *conventional-commits-api*
+
+                                              *conventional-commits.setup()*
+require('conventional-commits').setup({opts})
+    Merge {opts} into the default configuration.
+    See |conventional-commits-config|.
+
+                                               *conventional-commits.commit()*
+require('conventional-commits').commit()
+    Start the commit flow. Same as |:ConventionalCommit|.
+
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
