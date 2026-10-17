@@ -1,10 +1,13 @@
-# Conventional Commits Plugin for Neovim
+# conventional-commits.nvim
 
 <a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square" alt="Gitmoji" /></a>
 <a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits" /></a>
+<a href="https://neovim.io"><img src="https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white&style=flat-square" alt="Neovim 0.9+" /></a>
+<a href="https://www.lua.org"><img src="https://img.shields.io/badge/Made%20with-Lua-2C2D72?logo=lua&logoColor=white&style=flat-square" alt="Made with Lua" /></a>
+<a href="LICENSE"><img src="https://img.shields.io/github/license/zerbiniandrea/conventional-commits.nvim?style=flat-square" alt="License" /></a>
 <a href="https://ko-fi.com/zerbyy"><img src="https://img.shields.io/badge/ko--fi-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square" alt="Ko-fi" /></a>
 
-Create beautiful, standardized commits using [Conventional Commits](https://conventionalcommits.org) and [Gitmojis](https://gitmoji.dev) directly from Neovim.
+A Neovim plugin for writing [Conventional Commits](https://conventionalcommits.org) with [gitmoji](https://gitmoji.dev). Pick a commit type, scope and emoji through interactive fuzzy prompts, preview the git commit message, and commit without leaving Neovim.
 
 ![Demo](assets/demo.gif)
 
@@ -16,6 +19,11 @@ Create beautiful, standardized commits using [Conventional Commits](https://conv
 - 👀 Preview before committing
 - 📝 Full vim-style editing
 - 🎯 No dependencies
+
+## Requirements
+
+- Neovim >= 0.9
+- git
 
 ## Installation
 
@@ -46,7 +54,7 @@ The plugin follows standard Neovim plugin structure and *should* work with any p
 :ConventionalCommit
 ```
 
-Default keymap: `<leader>gc`
+No keymap is set by default; the lazy.nvim example above maps it to `<leader>gc`.
 
 ## Configuration
 
