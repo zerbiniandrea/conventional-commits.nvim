@@ -28,6 +28,21 @@ wf-recorder -g "$(slurp)" -f recording.mp4
 # Then convert to GIF with ffmpeg
 ```
 
+## Social preview image
+
+`social-preview.png` (1280x640) is the GitHub social preview, set in repo Settings → Social preview. It uses frame 60 of the demo (emoji picker):
+
+```bash
+magick demo.gif -coalesce frames/c%03d.png
+magick -size 1280x640 "xc:srgb(22,22,30)" \
+  \( frames/c060.png -resize 560x560 \) -geometry +680+40 -composite \
+  -font JetBrainsMonoNerdFontMono-Bold.ttf -fill '#e6e6e6' -pointsize 44 -annotate +70+250 'conventional-commits' \
+  -fill '#56b6c2' -annotate +70+305 '.nvim' \
+  -font NotoSans-Regular.ttf -fill '#9aa0aa' -pointsize 26 \
+  -annotate +70+380 'Conventional Commits + gitmoji,' -annotate +70+418 'right from Neovim.' \
+  -depth 8 social-preview.png
+```
+
 ## Notes
 
 - Some emojis don't render properly when using asciinema/agg due to font limitations
