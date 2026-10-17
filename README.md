@@ -1,10 +1,9 @@
 # conventional-commits.nvim
 
 <a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square" alt="Gitmoji" /></a>
-<a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits" /></a>
+<a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white&style=flat-square" alt="Conventional Commits" /></a>
 <a href="https://neovim.io"><img src="https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white&style=flat-square" alt="Neovim 0.9+" /></a>
-<a href="https://www.lua.org"><img src="https://img.shields.io/badge/Made%20with-Lua-2C2D72?logo=lua&logoColor=white&style=flat-square" alt="Made with Lua" /></a>
-<a href="LICENSE"><img src="https://img.shields.io/github/license/zerbiniandrea/conventional-commits.nvim?style=flat-square" alt="License" /></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License" /></a>
 <a href="https://ko-fi.com/zerbyy"><img src="https://img.shields.io/badge/ko--fi-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square" alt="Ko-fi" /></a>
 
 A Neovim plugin for writing [Conventional Commits](https://conventionalcommits.org) with [gitmoji](https://gitmoji.dev). Pick a commit type, scope and emoji through interactive fuzzy prompts, preview the git commit message, and commit without leaving Neovim.
