@@ -31,7 +31,7 @@ The resulting message looks like: >
 ==============================================================================
 2. REQUIREMENTS                            *conventional-commits-requirements*
 
-- Neovim >= 0.9
+- Neovim >= 0.10
 - git
 
 ==============================================================================

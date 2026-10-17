@@ -2,7 +2,7 @@
 
 <a href="https://gitmoji.dev"><img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square" alt="Gitmoji" /></a>
 <a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white&style=flat-square" alt="Conventional Commits" /></a>
-<a href="https://neovim.io"><img src="https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white&style=flat-square" alt="Neovim 0.9+" /></a>
+<a href="https://neovim.io"><img src="https://img.shields.io/badge/Neovim-0.10%2B-57A143?logo=neovim&logoColor=white&style=flat-square" alt="Neovim 0.10+" /></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License" /></a>
 <a href="https://ko-fi.com/zerbyy"><img src="https://img.shields.io/badge/ko--fi-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square" alt="Ko-fi" /></a>
 
@@ -21,7 +21,7 @@ A Neovim plugin for writing [Conventional Commits](https://conventionalcommits.o
 
 ## Requirements
 
-- Neovim >= 0.9
+- Neovim >= 0.10
 - git
 
 ## Installation
